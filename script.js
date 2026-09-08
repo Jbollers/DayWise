@@ -1,17 +1,13 @@
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js");
-      .then(registration => {
-        console.log(
-          "Service Worker registered:",
-          registration.scope
-        );
-      })
-      .catch(error => {
-        console.error(
-          "Service Worker registration failed:",
-          error
-        );
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("./sw.js", {
+        scope: "./"
       });
+
+      console.log("Day Wise offline service worker registered:", registration.scope);
+    } catch (error) {
+      console.error("Day Wise service worker registration failed:", error);
+    }
   });
 }

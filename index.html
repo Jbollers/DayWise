@@ -9,9 +9,9 @@
 <meta name="theme-color" content="#27776b">
 <meta name="description" content="A calm, private calendar for your everyday plans.">
 <title>Day Wise · Calendar</title>
-<link rel="manifest" id="manifest">
-<link rel="apple-touch-icon" id="apple-icon">
-<link rel="icon" id="favicon" type="image/png">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
 <style>
 :root{color-scheme:light;--bg:#f4f6f7;--surface:#fff;--text:#20312f;--muted:#647370;--line:#dfe7e5;--accent:#27776b;--tint:#eaf4f1;--hover:#f3f7f6;--shadow:0 10px 35px #263e3510;--danger:#b43838;--work:#355fa5;--personal:#8060a4;--health:#277863;--social:#9b651a}
 :root[data-theme=dark]{color-scheme:dark;--bg:#131d1c;--surface:#1b2826;--text:#edf4f1;--muted:#a3b6b0;--line:#344641;--accent:#83cdbc;--tint:#263f37;--hover:#24332f;--shadow:0 10px 35px #0002;--danger:#ff9c9c;--work:#a9c8ff;--personal:#d5b7fa;--health:#9cddc7;--social:#f0c287}
@@ -290,13 +290,7 @@ $('export').onclick=()=>{if(storageBlocked){try{const raw=localStorage.getItem(K
 $('import').onclick=()=>$('import-file').click();$('import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>5*1024*1024)throw Error('Choose a JSON backup smaller than 5 MB.');const source=JSON.parse(await file.text()),data=readData(source);if(storageBlocked&&!confirm('Replace unreadable data with this validated backup? Export the original first to preserve it.'))return;const categoryMap=new Map(categories.map(c=>[c.name.toLocaleLowerCase(),{...c}]));for(const c of data.categories){const key=c.name.toLocaleLowerCase(),existing=categoryMap.get(key);if(existing){if(source.version>=2)existing.color=c.color}else categoryMap.set(key,{...c})}const nextCategories=validateCategories([...categoryMap.values()]);const merged=new Map(events.map(x=>[x.id,x]));let changed=0;for(const item of data.events){item.category=categoryMap.get(item.category.toLocaleLowerCase()).name;for(const exception of Object.values(item.exceptions||{}))if(exception)exception.category=categoryMap.get(exception.category.toLocaleLowerCase()).name;const existing=merged.get(item.id);if(existing&&JSON.stringify(existing)===JSON.stringify(item))continue;if(existing){const signature=x=>JSON.stringify(x,(key,value)=>key==='id'?undefined:value);if([...merged.values()].some(x=>signature(x)===signature(item)))continue;item.id=uid();for(const exception of Object.values(item.exceptions||{}))if(exception)exception.id=item.id}merged.set(item.id,item);changed++}const previousNames=new Set(CATEGORIES);if(persist([...merged.values()],storageBlocked,nextCategories)){for(const c of CATEGORIES)if(!previousNames.has(c))active.add(c);updateCategorySelect();renderFilters();render();notify(changed+' event(s) imported. Categories and colors restored.')}}catch(err){notify('Import failed. '+(err instanceof SyntaxError?'The file is not valid JSON.':err.message))}};
 window.addEventListener('storage',e=>{if(e.key!==KEY&&e.key!==null)return;try{const raw=localStorage.getItem(KEY),data=readData(JSON.parse(raw||'[]'));knownCalendarRaw=raw;const previousNames=new Set(CATEGORIES);events=data.events;categories=data.categories;CATEGORIES=categories.map(c=>c.name);active=new Set(CATEGORIES.filter(c=>active.has(c)||!previousNames.has(c)));storageBlocked=false;$('banner').textContent='';updateCategorySelect();renderFilters();if($('category-dialog').open)renderCategoryManager();render();notify('Calendar refreshed from another tab.')}catch{notify('Another tab saved unreadable data. Reload before making changes.');storageBlocked=true}});
 setInterval(()=>{const today=dateKey(new Date());if(today!==lastToday){lastToday=today;render()}else renderUpcoming(filtered())},60000);
-// Embedded manifest and generated icon keep this document fully self-contained.
-const iconCanvas=document.createElement('canvas');iconCanvas.width=iconCanvas.height=512;const ctx=iconCanvas.getContext('2d');ctx.fillStyle='#27776b';ctx.fillRect(0,0,512,512);ctx.strokeStyle='#ffffff';ctx.lineWidth=24;ctx.lineCap='round';ctx.lineJoin='round';
-function iconLine(points){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x*8,y*8):ctx.moveTo(x*8,y*8));ctx.stroke()}
-// Calendar page with a W-shaped planning check, matching the header mark.
-ctx.beginPath();ctx.moveTo(19*8,17*8);ctx.lineTo(45*8,17*8);ctx.arc(45*8,22*8,5*8,-Math.PI/2,0);ctx.lineTo(50*8,47*8);ctx.arc(45*8,47*8,5*8,0,Math.PI/2);ctx.lineTo(19*8,52*8);ctx.arc(19*8,47*8,5*8,Math.PI/2,Math.PI);ctx.lineTo(14*8,22*8);ctx.arc(19*8,22*8,5*8,Math.PI,Math.PI*1.5);ctx.stroke();
-iconLine([[14,27],[50,27]]);iconLine([[23,12],[23,21]]);iconLine([[41,12],[41,21]]);ctx.strokeStyle='#c7f2d6';ctx.lineWidth=28;iconLine([[21,35],[26,44],[32,37],[38,44],[44,35]]);
-const icon=iconCanvas.toDataURL('image/png');$('apple-icon').href=icon;$('favicon').href=icon;const appURL=location.href.split('#')[0].split('?')[0];const manifest={name:'Day Wise Calendar',short_name:'Day Wise',description:'Your everyday plans, in one calm place.',start_url:appURL,display:'standalone',background_color:'#f4f6f7',theme_color:'#27776b',icons:[{src:icon,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};$('manifest').href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
+// PWA manifest and icons are static files so iPhone/iPad can install them reliably.
 // A layout fallback keeps fullscreen mode usable when browser fullscreen is unavailable.
 let calendarFullscreen=false,fullscreenRequest=0;
 function setCalendarFullscreen(enabled){const root=$('calendar'),anchor=view==='month'?[...root.children].find(p=>Number(p.dataset.month)===monthNumber(selected)):null,position=anchor&&anchor.offsetHeight?(root.scrollTop-anchor.offsetTop)/anchor.offsetHeight:0;calendarFullscreen=enabled;document.documentElement.classList.toggle('calendar-fullscreen',enabled);if(anchor)root.scrollTop=anchor.offsetTop+position*anchor.offsetHeight;const button=$('fullscreen-toggle');button.textContent=enabled?'✕ Exit fullscreen':'⛶ Fullscreen';button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'Exit fullscreen calendar':'Enter fullscreen calendar');button.focus()}
@@ -456,5 +450,6 @@ $('calendar').addEventListener('scroll',rememberMonthViewport,{passive:true});
 window.addEventListener('resize',()=>{if(deviceResizeFrame)cancelAnimationFrame(deviceResizeFrame);deviceResizeFrame=requestAnimationFrame(()=>{deviceResizeFrame=0;if(view==='month'&&monthViewportAnchor){const panel=[...$('calendar').children].find(p=>Number(p.dataset.month)===monthViewportAnchor.month);if(panel)$('calendar').scrollTop=panel.offsetTop+monthViewportAnchor.fraction*panel.offsetHeight}if(view==='month')updateMonthScroll()})});
 renderFilters();render();
 </script>
+<script src="./script.js"></script>
 </body>
 </html>
